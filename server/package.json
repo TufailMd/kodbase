@@ -12,6 +12,7 @@
   "license": "ISC",
   "description": "Kodbase: GitHub Clone backend",
   "dependencies": {
+    "dotenv": "^17.4.2",
     "uuid": "^14.0.1",
     "yargs": "^18.0.0"
   }
