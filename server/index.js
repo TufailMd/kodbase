@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import bodyParser from "body-parser";
 import http from "http";
+import { Server } from "socket.io";
 
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
@@ -61,27 +62,55 @@ yargs(hideBin(process.argv))
   .demandCommand(1, "You need at least one command")
   .help().argv;
 
-async function startServer() {
+function startServer() {
   dotenv.config();
-
   const app = express();
-
   const PORT = process.env.PORT || 3000;
+  const mongoURI = process.env.MONGO_URI;
 
-  app.use(cors());
+  app.use(cors({ origin: "*" }));
   app.use(bodyParser.json());
   app.use(express.json());
 
-  const mongoURI = process.env.MONGO_URI;
+  app.get("/", (req, res) => {
+    res.send("Welcome");
+  });
 
-  await mongoose
-    .connect(mongoURI)
-    .then(() => {
-      console.log("Connected to MongoDB");
-    })
-    .catch((err) => {
-      console.log("Unable to connect to MongoDB", err);
+  const server = http.createServer(app);
+
+  const io = new Server(server, {
+    cors: {
+      origin: "*",
+      methods: ["GET", "POST"],
+    },
+  });
+
+  let user = "test";
+  io.on("connection", (socket) => {
+    socket.join(user);
+    socket.emit("message", `Welcome ${user}`);
+
+    socket.on("joinRoom", (userId) => {
+      user = userId;
+      console.log("===========");
+      console.log(user);
+      console.log("===========");
+
+      socket.join(user);
     });
+  });
 
-  console.log("Server logic called");
+  mongoose
+    .connect(mongoURI)
+    .then(() => console.log("Connected to MongoDB"))
+    .catch((err) => console.log("Unable to connect to MongoDB", err));
+
+  const db = mongoose.connection;
+
+  db.once("open", () => {
+    console.log("CRUD operations called");
+  });
+  server.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
 }
