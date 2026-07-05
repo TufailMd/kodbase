@@ -19,7 +19,7 @@ const Signup = () => {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
 
-    const { setCurrentUser } = useAuth();
+    const { setUser } = useAuth();
 
     const handleSignup = async (e) => {
         e.preventDefault();
@@ -36,7 +36,8 @@ const Signup = () => {
             localStorage.setItem("token", res.data.token);
             localStorage.setItem("userId", res.data.userId);
 
-            setCurrentUser(res.data.userId);
+            setUser(res.data.userId);
+            setLoading(false);
 
             window.location.href = "/";
         } catch (err) {

@@ -1,17 +1,33 @@
 import mongoose, { Schema } from "mongoose";
 
-const IssueSchema = new Schema({
-  title: { type: String, required: true },
-  description: { type: String, required: true },
+const IssueSchema = new Schema(
+  {
+    title: { type: String, required: true },
+    description: { type: String, required: true },
 
-  status: { type: String, enum: ["open", "closed"], default: "open" },
-  repository: {
-    type: Schema.Types.ObjectId,
-    ref: "Repository",
-    required: true,
+    status: { type: String, enum: ["open", "closed"], default: "open" },
+    repository: {
+      type: Schema.Types.ObjectId,
+      ref: "Repository",
+      required: true,
+    },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    assignedTo: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
   },
-});
+  {
+    timestamps: true,
+  },
+);
 
-const Issue = new mongoose.model("Issue", IssueSchema);
+const Issue = mongoose.model("Issue", IssueSchema);
 
 export default Issue;

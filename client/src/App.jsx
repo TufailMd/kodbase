@@ -3,17 +3,18 @@ import { Outlet } from "react-router-dom";
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './authContext';
+import Header from "./components/header/Header";
 
 
 const App = () => {
-  const { currentUser, setCurrentUser } = useAuth();
+  const { user, setUser } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     const userIdFromStorage = localStorage.getItem('userId');
 
-    if (userIdFromStorage && !currentUser) {
-      setCurrentUser(userIdFromStorage);
+    if (userIdFromStorage && !user) {
+      setUser(userIdFromStorage);
     }
 
     if (!userIdFromStorage &&
@@ -27,10 +28,21 @@ const App = () => {
       navigate('/');
     }
 
-  }, [currentUser, navigate, setCurrentUser]);
+  }, [user, navigate, setUser]);
 
 
-  return <Outlet />;
+  return (
+    <div className="flex flex-col min-h-screen relative">
+
+
+      <Header />
+
+      <div className='flex-1'>
+        <Outlet />
+      </div>
+
+      {/* <Footer /> */}
+    </div>);
 };
 
 export default App;

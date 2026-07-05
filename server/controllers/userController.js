@@ -1,174 +1,190 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { MongoClient, ObjectId } from "mongodb";
 import dotenv from "dotenv";
+import User from "../models/userModel.js";
 
 dotenv.config();
-const mongoURI = process.env.MONGO_URI;
-
-let client;
-
-const connectClient = async () => {
-  if (!client) {
-    client = new MongoClient(mongoURI);
-    await client.connect();
-  }
-};
 
 const getAllUsers = async (req, res) => {
   try {
-    await connectClient();
-    const db = client.db("kodbase");
-    const usersCollection = db.collection("users");
-
-    const users = await usersCollection.find().toArray();
+    const users = await User.find().select("-password");
 
     res.json(users);
   } catch (err) {
-    console.error("Error during fetching users:", err, err.message);
+    console.error("Error fetching users:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
 
 const signUp = async (req, res) => {
-  const { username, email, password } = req.body;
-
   try {
-    await connectClient();
-    const db = client.db("kodbase");
-    const usersCollection = db.collection("users");
+    let { username, email, password } = req.body;
 
-    const existingUser = await usersCollection.findOne({ username });
+    if (!username || !email || !password) {
+      return res.status(400).json({
+        message: "All fields are required",
+      });
+    }
 
-    if (existingUser)
-      return res.status(400).json({ message: "User already exists" });
+    email = email.toLowerCase();
+
+    const existingUser = await User.findOne({
+      $or: [{ username }, { email }],
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        message: "Invalid email or password",
+      });
+    }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const user = { username, email, password: hashedPassword };
-    const result = await usersCollection.insertOne(user);
+    const newUser = await User.create({
+      username,
+      email,
+      password: hashedPassword,
+    });
 
-    const token = jwt.sign(
-      { id: result.insertedId },
-      process.env.JWT_SECRET_KEY,
-    );
+    const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET_KEY, {
+      expiresIn: "1h",
+    });
 
-    res.json({ token });
+    res.status(201).json({
+      token,
+      userId: newUser._id,
+    });
   } catch (err) {
-    console.error(err);
-    console.error("Error during sign up:", err, err.message);
-    res.status(500).json({ message: "Sign up failed" });
+    console.error("Sign up error:", err);
+    res.status(500).json({
+      message: "Sign up failed",
+    });
   }
 };
 
 const logIn = async (req, res) => {
-  const { email, password } = req.body;
-
   try {
-    await connectClient();
-    const db = client.db("kodbase");
-    const usersCollection = db.collection("users");
-    const user = await usersCollection.findOne({ email });
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Email and password are required",
+      });
+    }
+
+    const user = await User.findOne({
+      email: email.toLowerCase(),
+    });
 
     if (!user) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(400).json({
+        message: "Invalid credentials",
+      });
     }
+
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-      return res.status(401).json({ message: "Your password is incorrect" });
+      return res.status(401).json({
+        message: "Incorrect password",
+      });
     }
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, {
       expiresIn: "1h",
     });
 
-    res.json({ token, userId: user._id });
+    res.json({
+      token,
+      userId: user._id,
+    });
   } catch (err) {
-    console.error("Error during log in:", err, err.message);
-    res.status(500).json({ message: "Server error" });
+    console.error("Login error:", err);
+    res.status(500).json({
+      message: "Server error",
+    });
   }
 };
 
 const getUserProfile = async (req, res) => {
-  const { id } = req.params;
-
   try {
-    await connectClient();
-    const db = client.db("kodbase");
-    const usersCollection = db.collection("users");
+    const { id } = req.params;
 
-    const user = await usersCollection.findOne({
-      _id: new ObjectId(id),
-    });
+    const user = await User.findById(id).select("-password");
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({
+        message: "User not found",
+      });
     }
 
     res.json(user);
   } catch (err) {
-    console.error("Error during fetching user profile:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error("Profile error:", err);
+    res.status(500).json({
+      message: "Server error",
+    });
   }
 };
 
-const updateUserProfile = async function (req, res) {
-  const { id } = req.params;
-  const { email, password } = req.body;
-
-  let updateFields = { email };
-
-  if (password) {
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-    updateFields.password = hashedPassword;
-  }
-
+const updateUserProfile = async (req, res) => {
   try {
-    await connectClient();
-    const db = client.db("github-clone");
-    const usersCollection = db.collection("users");
+    const { id } = req.params;
 
-    const result = await usersCollection.findOneAndUpdate(
-      { _id: new ObjectId(id) },
-      { $set: updateFields },
-      { returnDocument: "after" },
-    );
+    const { bio, avatar, password } = req.body;
 
-    if (!result.value) {
-      return res.status(404).json({ message: "User not found" });
+    const updateFields = {};
+
+    if (bio !== undefined) updateFields.bio = bio;
+    if (avatar !== undefined) updateFields.avatar = avatar;
+
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      updateFields.password = hashedPassword;
     }
 
-    res.send(result.value);
+    const updatedUser = await User.findByIdAndUpdate(id, updateFields, {
+      new: true,
+      runValidators: true,
+    }).select("-password");
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    res.json(updatedUser);
   } catch (err) {
-    console.error("Error during updating:", err, err.message);
-    res.status(500).json({ message: "Server error" });
+    console.error("Update error:", err);
+    res.status(500).json({
+      message: "Server error",
+    });
   }
 };
 
 const deleteUserProfile = async (req, res) => {
-  const { id } = req.params;
-
   try {
-    await connectClient();
-    const db = client.db("kodbase");
-    const usersCollection = db.collection("users");
+    const { id } = req.params;
 
-    const user = await usersCollection.deleteOne({
-      _id: new ObjectId(id),
-    });
+    const deletedUser = await User.findByIdAndDelete(id);
 
-    if (result.deletedCount === 0) {
-      return res.status(404).json({ message: "User not found" });
+    if (!deletedUser) {
+      return res.status(404).json({
+        message: "User not found",
+      });
     }
 
-    res.json({ message: "User profile deleted" });
+    res.json({
+      message: "User profile deleted successfully",
+    });
   } catch (err) {
-    console.error("Error during fetching user profile:", err);
-    console.error("Error during deletion:", err, err.message);
-    res.status(500).json({ message: "Server error" });
+    console.error("Delete error:", err);
+    res.status(500).json({
+      message: "Server error",
+    });
   }
 };
 
