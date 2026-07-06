@@ -4,6 +4,7 @@ import {
     FiSearch,
     FiPlus,
     FiBell,
+    FiLogOut
 } from "react-icons/fi";
 import { PiFileCodeFill } from "react-icons/pi";
 import { CgProfile } from "react-icons/cg";
@@ -11,12 +12,33 @@ import {
     GoRepo,
     GoGitBranch,
 } from "react-icons/go";
-
-
+import { useEffect, useRef, useState } from "react";
 
 const Header = () => {
     const navigate = useNavigate();
     const pageName = window.location.pathname.split("/")[1] || "Dashboard";
+    const [openProfile, setOpenProfile] = useState(false);
+    const profileRef = useRef(null);
+
+    const handleLogout = () => {
+        localStorage.removeItem("userId");
+        localStorage.removeItem("token"); // if using JWT
+        navigate("/auth");
+    };
+
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (profileRef.current && !profileRef.current.contains(event.target)) {
+                setOpenProfile(false);
+            }
+        }
+
+        document.addEventListener("mousedown", handleClickOutside);
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     return (
         <header className="sticky top-0 z-50 h-16 w-full bg-[#0d1117] border-b border-[#30363d]">
@@ -79,11 +101,43 @@ const Header = () => {
                         <Link to="/repo" >
                             <GoRepo className="text-white" /></Link>
                     </button>
-                    <div className="h-11 w-11 rounded-full border-2 border-[#8b5cf6] flex items-center justify-center ml-2">
-                        <Link to="/profile">
+                    <div className="relative ml-2" ref={profileRef}>
+                        <button
+                            onClick={() => setOpenProfile(!openProfile)}
+                            className="h-11 w-11 rounded-full border-2 border-[#8b5cf6] flex items-center justify-center hover:bg-[#161b22]"
+                        >
                             <CgProfile className="text-white text-4xl" />
-                        </Link>
+                        </button>
 
+                        {openProfile && (
+                            <div className="absolute right-0 mt-2 w-64 rounded-lg border border-[#30363d] bg-[#161b22] shadow-xl overflow-hidden">
+
+                                <div className="px-4 py-3 border-b border-[#30363d]">
+                                    <p className="text-white font-semibold">
+                                        {localStorage.getItem("username") || "Developer"}
+                                    </p>
+                                    <p className="text-sm text-gray-400">
+                                        {localStorage.getItem("email")}
+                                    </p>
+                                </div>
+
+                                <button
+                                    onClick={() => navigate("/profile")}
+                                    className="w-full text-left px-4 py-3 hover:bg-[#21262d] text-white"
+                                >
+                                    My Profile
+                                </button>
+
+                                <button
+                                    onClick={handleLogout}
+                                    className="w-full flex items-center gap-2 px-4 py-3 hover:bg-[#21262d] text-red-400"
+                                >
+                                    <FiLogOut />
+                                    Logout
+                                </button>
+
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

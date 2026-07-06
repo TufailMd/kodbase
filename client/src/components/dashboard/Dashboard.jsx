@@ -6,13 +6,18 @@ import {
     Calendar,
     FolderGit2,
     Bell,
+    ChevronUp
 } from "lucide-react";
 
 const Dashboard = () => {
+    const [isActive, setIsActive] = useState(false);
     const [repositories, setRepositories] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [suggestedRepositories, setSuggestedRepositories] = useState([]);
     const [searchResults, setSearchResults] = useState([]);
+    const [searchQueryForAllRepo, setSearchQueryForAllRepo] = useState("");
+    const [searchResultsForAllRepo, setSearchResultsForAllRepo] = useState([]);
+
 
     useEffect(() => {
         const userId = localStorage.getItem("userId");
@@ -22,7 +27,7 @@ const Dashboard = () => {
                 const res = await axios.get(
                     `http://localhost:3000/repo/user/${userId}`
                 );
-                setRepositories(res.data.repository);
+                setRepositories(res.data);
             } catch (err) {
                 console.log(err);
             }
@@ -48,10 +53,24 @@ const Dashboard = () => {
             const filtered = repositories.filter((repo) =>
                 repo.name.toLowerCase().includes(searchQuery.toLowerCase())
             );
-
             setSearchResults(filtered);
         }
     }, [searchQuery, repositories]);
+
+    useEffect(() => {
+        if (searchQueryForAllRepo === "") {
+            setSearchResultsForAllRepo(suggestedRepositories);
+        } else {
+            const filtered = suggestedRepositories.filter((repo) =>
+                repo.name.toLowerCase().includes(searchQueryForAllRepo.toLowerCase())
+            );
+            console.log("Filtered: ", filtered);
+
+            setSearchResultsForAllRepo(filtered);
+        }
+    }, [searchQueryForAllRepo, suggestedRepositories]);
+
+    
 
     return (
         <section className="min-h-screen flex bg-[#0d1117] text-white">
@@ -85,24 +104,38 @@ const Dashboard = () => {
                         Suggested Repositories
                     </h3>
 
-                    <Search
+                    {isActive ? <ChevronUp onClick={() => setIsActive(!isActive)}
                         size={18}
                         className="text-gray-400 cursor-pointer"
-                    />
+                    /> : <Search onClick={() => setIsActive(!isActive)}
+                        size={18}
+                        className="text-gray-400 cursor-pointer"
+                    />}
                 </div>
+                <input
+                    type="text"
+                    placeholder="Search repositories..."
+                    value={searchQueryForAllRepo}
+                    onChange={(e) => setSearchQueryForAllRepo(e.target.value)}
+                    className={`${!isActive ? "hidden" : ""}   w-full bg-[#0d1117] border border-[#30363d] rounded-lg p-4 outline-none focus:border-blue-500 placeholder:text-gray-500`}
+                />
 
                 <div className="space-y-2 overflow-y-auto">
 
-                    {suggestedRepositories.map((repo) => (
-                        <div
-                            key={repo._id}
-                            className="rounded-md px-3 py-3 hover:bg-[#21262d] cursor-pointer transition border border-transparent hover:border-[#30363d]"
-                        >
-                            <p className="font-medium text-sm">
-                                {repo.name}
-                            </p>
-                        </div>
-                    ))}
+                    {searchResultsForAllRepo.length === 0 ? (
+                        <p className="text-gray-400 text-sm">No repositories found.</p>
+                    ) : (
+                        searchResultsForAllRepo.map((repo) => (
+                            <div
+                                key={repo._id}
+                                className="rounded-md px-3 py-3 hover:bg-[#21262d] cursor-pointer transition border border-transparent hover:border-[#30363d]"
+                            >
+                                <p className="font-medium text-sm">
+                                    {repo.name}
+                                </p>
+                            </div>
+                        ))
+                    )}
 
                 </div>
             </aside>
