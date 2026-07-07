@@ -1,69 +1,161 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-
 import axios from "axios";
-
-
+import { NavLink, Outlet } from "react-router-dom";
+import EditProfile from "./EditProfile";
 
 const Profile = () => {
-
-    const navigate = useNavigate();
-    const [userDetails, setUserDetails] = useState("");
+    const [userDetails, setUserDetails] = useState({});
+    const [isEditing, setIsEditing] = useState(false);
 
     useEffect(() => {
-
         const fetchUserDetails = async () => {
-            const userid = localStorage.getItem("userId");
+            const userId = localStorage.getItem("userId");
 
-            if (userid) {
-                try {
-                    const response = await axios.get(`http://localhost:3000/userProfile/${userid}`);
+            if (!userId) return;
 
-                    console.log(response.data);
-                    
-                    setUserDetails(response.data);
-                } catch (error) {
-                    console.log("Cannot fetch user details", error);
+            try {
+                const res = await axios.get(
+                    `http://localhost:3000/userProfile/${userId}`
+                );
 
-                }
+                setUserDetails(res.data);
+            } catch (err) {
+                console.log("Cannot fetch user details", err);
             }
-        }
+        };
+
         fetchUserDetails();
     }, []);
 
     return (
-        <div className="min-h-screen bg-[#24292f] text-white flex flex-col items-center">
-            <div className="mt-8 w-full max-w-md border-b border-gray-600">
-                <div className="flex gap-8 justify-center">
-                    <button className="pb-3 text-sm border-b-2 border-orange-500 font-medium">
+        <div className="min-h-screen bg-[#0d1117] text-[#f0f6fc]">
+
+            {/* Tabs */}
+
+            <div className="border-b border-[#30363d]">
+                <div className="max-w-7xl mx-auto flex gap-8 px-8">
+
+                    <NavLink
+                        to="/profile"
+                        end
+                        className={({ isActive }) =>
+                            `py-4 border-b-2 transition ${isActive
+                                ? "border-orange-500 text-white"
+                                : "border-transparent text-gray-400 hover:text-white"
+                            }`
+                        }
+                    >
                         Overview
-                    </button>
+                    </NavLink>
 
-                    <button className="pb-3 text-sm text-gray-400 hover:text-white">
-                        Starred Repositories
-                    </button>
+                    <NavLink
+                        to="/profile/repositories"
+                        className={({ isActive }) =>
+                            `py-4 border-b-2 transition ${isActive
+                                ? "border-orange-500 text-white"
+                                : "border-transparent text-gray-400 hover:text-white"
+                            }`
+                        }
+                    >
+                        Repositories
+                    </NavLink>
+
                 </div>
             </div>
 
-            <div className="flex flex-col items-center mt-12">
-                <div className="w-32 h-32 rounded-full bg-gray-500"></div>
+            {/* Main */}
 
-                <h2 className="mt-5 text-2xl font-semibold">{userDetails.username}</h2>
+            <div className="max-w-7xl mx-auto px-8 py-8 flex gap-10">
 
-                <button className="mt-6 w-64 bg-[#30363d] hover:bg-[#3b434b] border border-gray-700 py-2 rounded-md transition">
-                    Follow
-                </button>
+                {/* Left Sidebar */}
 
-                <div className="flex gap-6 mt-8 text-gray-300">
-                    <span>
-                        <span className="font-semibold text-white">{userDetails.followers}</span> Followers
-                    </span>
+                <aside className="w-[320px]">
 
-                    <span>
-                        <span className="font-semibold text-white">3</span> Following
-                    </span>
-                </div>
+                    {isEditing ? (
+                        <EditProfile
+                            userDetails={userDetails}
+                            setUserDetails={setUserDetails}
+                            setIsEditing={setIsEditing}
+                        />
+                    ) : (
+                        <>
+                            <img
+                                src={userDetails.avatar}
+                                alt={userDetails.name}
+                                className="w-72 h-72 rounded-full object-cover border border-[#30363d]"
+                            />
+
+                            {userDetails.name && (
+                                <h1 className="text-4xl font-bold mt-6">
+                                    {userDetails.name}
+                                </h1>)}
+
+                            <p className="text-2xl text-gray-400">
+                                {userDetails.username}
+                            </p>
+
+                            {userDetails.bio && (
+                                <p className="mt-5 whitespace-pre-line text-lg">
+                                    {userDetails.bio}
+                                </p>
+                            )}
+
+                            <button
+                                onClick={() => setIsEditing(true)}
+                                className="mt-6 w-full bg-[#21262d] border border-[#30363d] rounded-md py-2 hover:bg-[#30363d] transition"
+                            >
+                                Edit profile
+                            </button>
+
+                            <div className="flex items-center gap-2 mt-6 text-gray-400">
+
+                                <span>
+                                    👥{" "}
+                                    <span className="font-semibold text-white">
+                                        {userDetails.followers?.length || 0}
+                                    </span>{" "}
+                                    followers
+                                </span>
+
+                                <span>·</span>
+
+                                <span>
+                                    <span className="font-semibold text-white">
+                                        {userDetails.following?.length || 0}
+                                    </span>{" "}
+                                    following
+                                </span>
+
+                            </div>
+
+                            <div className="mt-6 text-gray-500 text-sm">
+                                Joined{" "}
+                                {userDetails.createdAt
+                                    ? new Date(
+                                        userDetails.createdAt
+                                    ).toLocaleDateString("en-US", {
+                                        month: "long",
+                                        year: "numeric",
+                                    })
+                                    : ""}
+                            </div>
+                        </>
+                    )}
+                </aside>
+
+                {/* Right Side */}
+
+                <main className="flex-1">
+                    <Outlet
+                        context={{
+                            userDetails,
+                            setUserDetails,
+                        }}
+                    />
+                </main>
+
             </div>
+
         </div>
     );
 };

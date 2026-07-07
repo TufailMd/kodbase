@@ -22,7 +22,7 @@ const Header = () => {
 
     const handleLogout = () => {
         localStorage.removeItem("userId");
-        localStorage.removeItem("token"); // if using JWT
+        localStorage.removeItem("token");
         navigate("/auth");
     };
 

@@ -33,6 +33,8 @@ const Signup = () => {
                 password,
             });
 
+            console.log(res.data);
+
             localStorage.setItem("token", res.data.token);
             localStorage.setItem("userId", res.data.userId);
 

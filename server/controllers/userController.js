@@ -43,6 +43,7 @@ const signUp = async (req, res) => {
 
     const newUser = await User.create({
       username,
+      name: username, // schema requires "name" too, but form doesn't collect it — using username as a placeholder
       email,
       password: hashedPassword,
     });
@@ -132,12 +133,8 @@ const updateUserProfile = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const { bio, avatar, password } = req.body;
-
-    const updateFields = {};
-
-    if (bio !== undefined) updateFields.bio = bio;
-    if (avatar !== undefined) updateFields.avatar = avatar;
+    const { email, password } = req.body;
+    const updateFields = { email };
 
     if (password) {
       const salt = await bcrypt.genSalt(10);
@@ -188,6 +185,39 @@ const deleteUserProfile = async (req, res) => {
   }
 };
 
+const updateUserProfileDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, bio } = req.body;
+
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    user.name = name;
+    user.bio = bio;
+
+    if (req.file) {
+      user.avatar = req.file.path;
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      message: "Profile updated successfully",
+      user,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
 export default {
   getAllUsers,
   signUp,
@@ -195,4 +225,5 @@ export default {
   getUserProfile,
   updateUserProfile,
   deleteUserProfile,
+  updateUserProfileDetails,
 };

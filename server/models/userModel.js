@@ -5,8 +5,14 @@ const UserSchema = new Schema(
     username: {
       type: String,
       required: true,
-      trim: true,
       unique: true,
+      trim: true,
+    },
+
+    name: {
+      type: String,
+      required: true,
+      trim: true,
     },
 
     email: {
@@ -24,12 +30,11 @@ const UserSchema = new Schema(
 
     avatar: {
       type: String,
-      default: "",
+      default: "https://avatars.githubusercontent.com/u/9919?s=200&v=4",
     },
 
     bio: {
       type: String,
-      default: "",
       maxlength: 200,
     },
 
@@ -37,7 +42,6 @@ const UserSchema = new Schema(
       {
         type: Schema.Types.ObjectId,
         ref: "User",
-        default: [],
       },
     ],
 
@@ -45,7 +49,6 @@ const UserSchema = new Schema(
       {
         type: Schema.Types.ObjectId,
         ref: "User",
-        default: [],
       },
     ],
 
@@ -53,14 +56,13 @@ const UserSchema = new Schema(
       {
         type: Schema.Types.ObjectId,
         ref: "Repository",
-        default: [],
       },
     ],
+
     starredRepositories: [
       {
         type: Schema.Types.ObjectId,
         ref: "Repository",
-        default: [],
       },
     ],
   },
