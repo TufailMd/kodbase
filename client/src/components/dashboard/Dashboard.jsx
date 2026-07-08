@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
     Search,
     Book,
@@ -18,6 +19,7 @@ const Dashboard = () => {
     const [searchQueryForAllRepo, setSearchQueryForAllRepo] = useState("");
     const [searchResultsForAllRepo, setSearchResultsForAllRepo] = useState([]);
 
+    const navigate = useNavigate();
 
     useEffect(() => {
         const userId = localStorage.getItem("userId");
@@ -70,7 +72,7 @@ const Dashboard = () => {
         }
     }, [searchQueryForAllRepo, suggestedRepositories]);
 
-    
+
 
     return (
         <section className="min-h-screen flex bg-[#0d1117] text-white">
@@ -192,9 +194,9 @@ const Dashboard = () => {
                         </div>
                     ) : (
                         searchResults.map((repo) => (
-                            <div
+                            <div onClick={() => (navigate(`/repo/${repo.name}`))}
                                 key={repo._id}
-                                className="bg-[#161b22] border border-[#30363d] rounded-xl p-5 hover:border-[#58a6ff] transition-all hover:-translate-y-1"
+                                className="bg-[#161b22] border border-[#30363d] rounded-xl p-5 hover:border-[#58a6ff] transition-all hover:-translate-y-1 cursor-pointer"
                             >
                                 <div className="flex justify-between">
 

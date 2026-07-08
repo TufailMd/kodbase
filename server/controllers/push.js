@@ -9,27 +9,42 @@ export async function pushRepo() {
   try {
     const commitDirs = await fs.readdir(commitsPath);
 
-    for (const commitDir of commitDirs) {
-      const commitPath = path.join(commitsPath, commitDir);
-      const files = await fs.readdir(commitPath);
+    for (const commitId of commitDirs) {
+      const commitDir = path.join(commitsPath, commitId);
 
-      for (const file of files) {
-        const filePath = path.join(commitPath, file);
-        const fileContents = await fs.readFile(filePath);
+      // Upload complete commit recursively
+      await uploadDirectory(commitDir, `commits/${commitId}`);
 
-        const params = {
-          Bucket: S3_BUCKET,
-          Key: `commits/${commitDir}/${file}`,
-          Body: fileContents,
-        };
-
-        await s3.upload(params).promise();
-      }
-
-      console.log("All commit pushed to S3");
-      
+      console.log(`Commit ${commitId} pushed to S3.`);
     }
+
+    console.log("All commits pushed successfully.");
   } catch (error) {
-    console.log(`Error pushing to S3 : ${error}`);
+    console.error("Error pushing to S3:\n", error);
+  }
+}
+
+// Recursively upload files and folders
+async function uploadDirectory(localDir, s3Prefix) {
+  const entries = await fs.readdir(localDir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const localPath = path.join(localDir, entry.name);
+    const s3Key = `${s3Prefix}/${entry.name}`;
+
+    if (entry.isDirectory()) {
+      // Upload nested folder
+      await uploadDirectory(localPath, s3Key);
+    } else {
+      const fileContents = await fs.readFile(localPath);
+
+      await s3
+        .upload({
+          Bucket: S3_BUCKET,
+          Key: s3Key,
+          Body: fileContents,
+        })
+        .promise();
+    }
   }
 }

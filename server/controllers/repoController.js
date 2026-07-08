@@ -3,6 +3,87 @@ import mongoose from "mongoose";
 import Repository from "../models/repoModel.js";
 import User from "../models/userModel.js";
 import Issue from "../models/issueModel.js";
+import { s3, S3_BUCKET } from "../config/aws-config.js";
+
+// GET all commits + files for a repo from S3
+const getRepoContentsFromS3 = async (req, res) => {
+  const { repoName } = req.params; // repo ka naam URL se aayega
+
+  try {
+    // S3 mein list karo — sirf is repo ke commits
+    const data = await s3
+      .listObjectsV2({
+        Bucket: S3_BUCKET,
+        Prefix: `commits/`, // sirf commits folder dekho
+      })
+      .promise();
+
+    if (!data.Contents || data.Contents.length === 0) {
+      return res.status(404).json({ message: "No commits found in S3" });
+    }
+
+    // S3 keys ko organize karo by commit folder
+    const commitMap = {};
+
+    data.Contents.forEach((obj) => {
+      const key = obj.Key;
+      // key = "commits/abc123xyz/hello.txt"
+
+      const parts = key.split("/");
+      // parts = ['commits', 'abc123xyz', 'hello.txt']
+
+      if (parts.length < 3) return; // skip if not a file
+
+      const commitId = parts[1]; // 'abc123xyz'
+
+      const relativePath = parts.slice(2).join("/");
+
+      if (!commitMap[commitId]) {
+        commitMap[commitId] = [];
+      }
+
+      if (relativePath !== "commit.json") {
+        commitMap[commitId].push(relativePath);
+      }
+    });
+
+    // Latest commit ki files return karo
+    const commitIds = Object.keys(commitMap);
+    const latestCommitId = commitIds[commitIds.length - 1];
+    const files = commitMap[latestCommitId];
+
+    res.json({
+      commits: commitMap, // saare commits
+      latestCommit: latestCommitId,
+      files: files, // latest commit ki files
+    });
+  } catch (err) {
+    console.error("Error fetching from S3:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// GET a specific file's content from S3
+const getFileContentFromS3 = async (req, res) => {
+  const { commitId, fileName } = req.params;
+
+  try {
+    const fileData = await s3
+      .getObject({
+        Bucket: S3_BUCKET,
+        Key: `commits/${commitId}/${fileName}`,
+      })
+      .promise();
+
+    // fileData.Body = raw bytes → convert to string
+    const content = fileData.Body.toString("utf-8");
+
+    res.json({ content, fileName });
+  } catch (err) {
+    console.error("Error fetching file:", err);
+    res.status(500).json({ message: "File not found" });
+  }
+};
 
 const createRepository = async (req, res) => {
   try {
@@ -280,4 +361,6 @@ export default {
   updateRepositoryById,
   deleteRepositoryById,
   toggleVisibilityById,
+  getRepoContentsFromS3,
+  getFileContentFromS3,
 };

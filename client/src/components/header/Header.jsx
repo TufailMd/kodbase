@@ -129,6 +129,13 @@ const Header = () => {
                                 </button>
 
                                 <button
+                                    onClick={() => navigate("/profile/repositories")}
+                                    className="w-full text-left px-4 py-3 hover:bg-[#21262d] text-white"
+                                >
+                                    Repository
+                                </button>
+
+                                <button
                                     onClick={handleLogout}
                                     className="w-full flex items-center gap-2 px-4 py-3 hover:bg-[#21262d] text-red-400"
                                 >

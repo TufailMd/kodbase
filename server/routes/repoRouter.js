@@ -15,5 +15,12 @@ repoRouter.get(
 repoRouter.put("/repo/update/:id", repoController.updateRepositoryById);
 repoRouter.delete("/repo/delete/:id", repoController.deleteRepositoryById);
 repoRouter.patch("/repo/toggle/:id", repoController.toggleVisibilityById);
+// S3 file routes
+repoRouter.get("/repo/s3/:repoName", repoController.getRepoContentsFromS3);
+
+repoRouter.get(
+  "/repo/s3/file/:commitId/:fileName",
+  repoController.getFileContentFromS3,
+);
 
 export default repoRouter;

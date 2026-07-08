@@ -12,6 +12,9 @@ import Signup from './components/auth/SignUp.jsx';
 import Profile from './components/user/Profile.jsx';
 import ProfileOverview from './components/user/ProfileOverview.jsx';
 import ProfileRepositories from './components/user/ProfileRepositories.jsx';
+import RepoDetail from './components/repo/RepoDetail.jsx';
+import CreateRepo from './components/repo/CreateRepo.jsx';
+import EditRepo from './components/repo/EditRepo.jsx';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -23,6 +26,22 @@ const router = createBrowserRouter(
         <Route index element={<ProfileOverview />} />
         <Route path="repositories" element={<ProfileRepositories />} />
       </Route>
+      <Route path="repo/:name" element={<RepoDetail />} />
+      <Route path="repo/create" element={<CreateRepo />} />
+      <Route path="repo/edit/:id" element={<EditRepo />} />
+
+      {/* <Route path="/repo/:repoName" element={<Repository />} />
+
+      <Route
+        path="/repo/:repoName/tree/:branch/*"
+        element={<Repository />}
+      />
+
+      <Route
+        path="/repo/:repoName/blob/:branch/*"
+        element={<RepositoryFile />}
+      /> */}
+
     </Route>
   )
 );

@@ -1,1 +1,11 @@
 @import "tailwindcss";
+
+.github-btn {
+  @apply flex items-center gap-2
+    px-4 py-2
+    rounded-md
+    border border-[#30363d]
+    bg-[#21262d]
+    hover:bg-[#30363d]
+    transition;
+}

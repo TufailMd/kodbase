@@ -14,14 +14,13 @@ export async function pullRepo() {
       })
       .promise();
 
-    const objects = data.Contents;
+    const objects = data.Contents || [];
 
     for (const object of objects) {
       const key = object.Key;
 
-      const commitDir = path.join(commitsPath, key.split("/")[1]);
-
-      await fs.mkdir(commitDir, { recursive: true });
+      // Skip folder placeholders if any
+      if (key.endsWith("/")) continue;
 
       const params = {
         Bucket: S3_BUCKET,
@@ -29,10 +28,21 @@ export async function pullRepo() {
       };
 
       const fileContent = await s3.getObject(params).promise();
-      await fs.writeFile(path.join(repoPath, key), fileContent.Body);
+
+      // Local path where file will be saved
+      const localFilePath = path.join(repoPath, key);
+
+      // Create complete directory structure
+      await fs.mkdir(path.dirname(localFilePath), {
+        recursive: true,
+      });
+
+      // Write file
+      await fs.writeFile(localFilePath, fileContent.Body);
     }
+
     console.log("All commits pulled from S3.");
   } catch (error) {
-    console.log(`Unable to pull from S3 : ${error}`);
+    console.error("Unable to pull from S3:\n", error);
   }
 }
