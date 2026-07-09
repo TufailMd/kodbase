@@ -7,34 +7,35 @@ import { s3, S3_BUCKET } from "../config/aws-config.js";
 
 // GET all commits + files for a repo from S3
 const getRepoContentsFromS3 = async (req, res) => {
-  const { repoName } = req.params; // repo ka naam URL se aayega
+  const { repoName } = req.params;
 
   try {
-    // S3 mein list karo — sirf is repo ke commits
     const data = await s3
       .listObjectsV2({
         Bucket: S3_BUCKET,
-        Prefix: `commits/`, // sirf commits folder dekho
+        Prefix: `commits/`,
       })
       .promise();
 
     if (!data.Contents || data.Contents.length === 0) {
-      return res.status(404).json({ message: "No commits found in S3" });
+      return res.json({
+        isEmpty: true,
+        commits: {},
+        latestCommit: null,
+        files: [],
+      });
     }
 
-    // S3 keys ko organize karo by commit folder
     const commitMap = {};
 
     data.Contents.forEach((obj) => {
       const key = obj.Key;
-      // key = "commits/abc123xyz/hello.txt"
 
       const parts = key.split("/");
-      // parts = ['commits', 'abc123xyz', 'hello.txt']
 
-      if (parts.length < 3) return; // skip if not a file
+      if (parts.length < 3) return;
 
-      const commitId = parts[1]; // 'abc123xyz'
+      const commitId = parts[1];
 
       const relativePath = parts.slice(2).join("/");
 
@@ -47,15 +48,15 @@ const getRepoContentsFromS3 = async (req, res) => {
       }
     });
 
-    // Latest commit ki files return karo
     const commitIds = Object.keys(commitMap);
     const latestCommitId = commitIds[commitIds.length - 1];
     const files = commitMap[latestCommitId];
 
     res.json({
-      commits: commitMap, // saare commits
+      isEmpty: false,
+      commits: commitMap,
       latestCommit: latestCommitId,
-      files: files, // latest commit ki files
+      files,
     });
   } catch (err) {
     console.error("Error fetching from S3:", err);
@@ -63,7 +64,6 @@ const getRepoContentsFromS3 = async (req, res) => {
   }
 };
 
-// GET a specific file's content from S3
 const getFileContentFromS3 = async (req, res) => {
   const { commitId, fileName } = req.params;
 
@@ -75,7 +75,6 @@ const getFileContentFromS3 = async (req, res) => {
       })
       .promise();
 
-    // fileData.Body = raw bytes → convert to string
     const content = fileData.Body.toString("utf-8");
 
     res.json({ content, fileName });
@@ -130,7 +129,10 @@ const createRepository = async (req, res) => {
 
     res.status(201).json({
       message: "Repository created successfully",
-      repositoryId: repository._id,
+      repository: {
+        _id: repository._id,
+        name: repository.name,
+      },
     });
   } catch (err) {
     console.error("Repository creation error:", err);

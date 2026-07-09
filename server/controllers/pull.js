@@ -1,16 +1,18 @@
 import fs from "fs/promises";
 import path from "path";
 import { s3, S3_BUCKET } from "../config/aws-config.js";
+import { getRemoteRepository } from "../utils/getRemoteRepository.js";
 
 export async function pullRepo() {
   const repoPath = path.resolve(process.cwd(), ".kod");
-  const commitsPath = path.join(repoPath, "commits");
 
   try {
+    const { repositoryId } = await getRemoteRepository();
+
     const data = await s3
       .listObjectsV2({
         Bucket: S3_BUCKET,
-        Prefix: "commits/",
+        Prefix: `${repositoryId}/commits/`,
       })
       .promise();
 
@@ -19,30 +21,30 @@ export async function pullRepo() {
     for (const object of objects) {
       const key = object.Key;
 
-      // Skip folder placeholders if any
       if (key.endsWith("/")) continue;
 
-      const params = {
-        Bucket: S3_BUCKET,
-        Key: key,
-      };
+      const fileContent = await s3
+        .getObject({
+          Bucket: S3_BUCKET,
+          Key: key,
+        })
+        .promise();
 
-      const fileContent = await s3.getObject(params).promise();
+      // Remove repository id from S3 key
+      const relativePath = key.replace(`${repositoryId}/`, "");
 
-      // Local path where file will be saved
-      const localFilePath = path.join(repoPath, key);
+      const localFilePath = path.join(repoPath, relativePath);
 
-      // Create complete directory structure
       await fs.mkdir(path.dirname(localFilePath), {
         recursive: true,
       });
 
-      // Write file
       await fs.writeFile(localFilePath, fileContent.Body);
     }
 
-    console.log("All commits pulled from S3.");
+    console.log("All commits pulled successfully.");
   } catch (error) {
-    console.error("Unable to pull from S3:\n", error);
+    console.error("Pull failed:");
+    console.error(error.message);
   }
 }

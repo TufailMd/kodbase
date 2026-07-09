@@ -1,5 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
+import { addRemote } from "./remote.js";
 
 export async function initRepo() {
   const repoPath = path.resolve(process.cwd(), ".kod");

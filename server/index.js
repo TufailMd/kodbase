@@ -20,6 +20,24 @@ yargs(hideBin(process.argv))
   .command("start", "Start the server", {}, startServer)
   .command("init", "initialize a new kod repository", {}, initRepo)
   .command(
+    "remote add <name> <url>",
+    "Add a remote repository",
+    (yargs) => {
+      yargs
+        .positional("name", {
+          describe: "Remote name",
+          type: "string",
+        })
+        .positional("url", {
+          describe: "Repository URL",
+          type: "string",
+        });
+    },
+    (argv) => {
+      addRemote(argv.name, argv.url);
+    },
+  )
+  .command(
     "add <file>",
     "Add a file to the repository",
     (yargs) => {
