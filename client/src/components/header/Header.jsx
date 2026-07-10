@@ -85,7 +85,7 @@ const Header = () => {
 
                 {/* Right */}
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/create')} className="flex h-10 w-10 items-center justify-center rounded-md border border-[#30363d] hover:bg-[#161b22] cursor-pointer">
+                    <button onClick={() => navigate('repo/create')} className="flex h-10 w-10 items-center justify-center rounded-md border border-[#30363d] hover:bg-[#161b22] cursor-pointer">
                         <FiPlus className="text-white" />
                     </button>
 

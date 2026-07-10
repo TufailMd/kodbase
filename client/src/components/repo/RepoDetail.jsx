@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 
 import RepositoryHeader from "./RepositoryHeader";
@@ -13,6 +13,7 @@ import buildTree from "../../utils/buildTree";
 
 const RepoDetail = () => {
     const { name } = useParams();
+    const navigate = useNavigate();
 
     const [repo, setRepo] = useState(null);
     const [commits, setCommits] = useState({});
@@ -47,6 +48,11 @@ const RepoDetail = () => {
             const res = await axios.get(
                 `http://localhost:3000/repo/s3/${repoName}`
             );
+
+            if (res.data.isEmpty) {
+                navigate(`/repo/${repoName}/quick-setup`);
+                return;
+            }
 
             setCommits(res.data.commits);
             setFiles(res.data.files);

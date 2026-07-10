@@ -174,7 +174,7 @@ const Dashboard = () => {
 
                 <div className="flex gap-4 mt-8">
 
-                    <button className="bg-[#238636] px-5 py-2 rounded-md hover:bg-[#2ea043] transition">
+                    <button onClick={() => navigate("repo/create")} className="bg-[#238636] px-5 py-2 rounded-md hover:bg-[#2ea043] transition">
                         New Repository
                     </button>
 

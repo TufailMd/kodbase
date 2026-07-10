@@ -14,6 +14,7 @@ import { commitRepo } from "./controllers/commit.js";
 import { pullRepo } from "./controllers/pull.js";
 import { pushRepo } from "./controllers/push.js";
 import { revertRepo } from "./controllers/revert.js";
+import { addRemote } from "./controllers/remote.js";
 import mainRouter from "./routes/mainRouter.js";
 
 yargs(hideBin(process.argv))

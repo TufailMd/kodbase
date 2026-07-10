@@ -15,6 +15,7 @@ import ProfileRepositories from './components/user/ProfileRepositories.jsx';
 import RepoDetail from './components/repo/RepoDetail.jsx';
 import CreateRepo from './components/repo/CreateRepo.jsx';
 import EditRepo from './components/repo/EditRepo.jsx';
+import QuickSetup from './components/repository/QuickSetup.jsx';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -41,6 +42,10 @@ const router = createBrowserRouter(
         path="/repo/:repoName/blob/:branch/*"
         element={<RepositoryFile />}
       /> */}
+      <Route
+        path="/repo/:name/quick-setup"
+        element={<QuickSetup />}
+      />
 
     </Route>
   )

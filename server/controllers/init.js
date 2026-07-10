@@ -11,7 +11,15 @@ export async function initRepo() {
     await fs.mkdir(commitsPath, { recursive: true });
     await fs.writeFile(
       path.join(repoPath, "config.json"),
-      JSON.stringify({ bucket: process.env.S3_Bucket }),
+      JSON.stringify(
+        {
+          bucket: process.env.S3_Bucket,
+          remotes: {},
+          currentRemote: null,
+        },
+        null,
+        2,
+      ),
     );
     console.log("Repository initialized!");
   } catch (error) {
