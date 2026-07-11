@@ -5,7 +5,6 @@ export async function getRemoteRepository() {
   const repoPath = path.resolve(process.cwd(), ".kod");
   const configPath = path.join(repoPath, "config.json");
 
-  // Read config
   const config = JSON.parse(await fs.readFile(configPath, "utf-8"));
 
   if (!config.currentRemote) {

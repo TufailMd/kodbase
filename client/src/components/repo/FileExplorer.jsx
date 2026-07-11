@@ -1,7 +1,5 @@
-import {
-    FileText,
-    Folder,
-} from "lucide-react";
+import buildTree from "../../utils/buildTree";
+import TreeNode from "../repository/TreeNode";
 
 const FileExplorer = ({
     files,
@@ -9,128 +7,64 @@ const FileExplorer = ({
     onFileClick,
 }) => {
 
-    return (
+    const tree = buildTree(files);
 
-        <div className="border border-[#30363d] rounded-lg overflow-hidden">
+    if (!files.length) {
+        return (
+            <div className="rounded-lg border border-[#30363d] bg-[#0d1117]">
 
-            {/* Header */}
-
-            <div className="bg-[#161b22] border-b border-[#30363d] px-5 py-3 grid grid-cols-12 text-sm font-semibold text-gray-300">
-
-                <div className="col-span-5">
-                    Name
+                <div className="px-4 py-3 border-b border-[#30363d] bg-[#161b22] font-semibold">
+                    Files
                 </div>
 
-                <div className="col-span-5">
-                    Last Commit
-                </div>
+                <div className="py-20 text-center text-gray-500">
 
-                <div className="col-span-2 text-right">
-                    Updated
+                    No files found.
+
                 </div>
 
             </div>
+        );
+    }
 
-            {/* Files */}
+    return (
 
-            {files.length === 0 ? (
+        <div className="rounded-lg border border-[#30363d] bg-[#0d1117] overflow-hidden">
 
-                <div className="py-20 text-center text-gray-400">
+            {/* Header */}
 
-                    No files pushed yet.
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[#30363d] bg-[#161b22]">
 
-                </div>
+                <h2 className="font-semibold">
 
-            ) : (
+                    Files
 
-                files.map((file, index) => {
+                </h2>
 
-                    const isFolder = file.includes("/");
+                <span className="text-sm text-gray-400">
 
-                    return (
+                    {files.length} file{files.length !== 1 ? "s" : ""}
 
-                        <button
-                            key={index}
-                            onClick={() => onFileClick(file)}
-                            className={`
+                </span>
 
-                                w-full
+            </div>
 
-                                grid
+            {/* Tree */}
 
-                                grid-cols-12
+            <div className="py-2">
 
-                                items-center
+                {tree.map(node => (
 
-                                px-5
+                    <TreeNode
+                        key={node.path}
+                        node={node}
+                        selectedFile={selectedFile}
+                        onFileClick={onFileClick}
+                    />
 
-                                py-3
+                ))}
 
-                                border-b
-
-                                border-[#30363d]
-
-                                hover:bg-[#161b22]
-
-                                ${selectedFile === file
-                                    ? "bg-[#161b22]"
-                                    : ""
-                                }
-
-                            `}
-                        >
-
-                            {/* Name */}
-
-                            <div className="col-span-5 flex items-center gap-3">
-
-                                {isFolder ? (
-
-                                    <Folder
-                                        size={18}
-                                        className="text-[#58a6ff]"
-                                    />
-
-                                ) : (
-
-                                    <FileText
-                                        size={18}
-                                        className="text-gray-300"
-                                    />
-
-                                )}
-
-                                <span className="hover:text-[#58a6ff]">
-
-                                    {file}
-
-                                </span>
-
-                            </div>
-
-                            {/* Commit */}
-
-                            <div className="col-span-5 text-left text-gray-400">
-
-                                Initial commit
-
-                            </div>
-
-                            {/* Updated */}
-
-                            <div className="col-span-2 text-right text-gray-500 text-sm">
-
-                                just now
-
-                            </div>
-
-                        </button>
-
-                    );
-
-                })
-
-            )}
+            </div>
 
         </div>
 

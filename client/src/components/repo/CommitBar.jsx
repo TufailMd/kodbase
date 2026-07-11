@@ -1,16 +1,20 @@
 import { GitCommit } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 
 const CommitBar = ({
     latestCommit,
-    totalCommits = 0,
+    totalCommits,
+    commitMessage,
+    commitDate,
 }) => {
 
     if (!latestCommit) return null;
 
     return (
+
         <div className="border border-[#30363d] rounded-t-lg bg-[#161b22]">
 
-            <div className="flex justify-between items-center px-5 py-3">
+            <div className="flex items-center justify-between px-5 py-3">
 
                 {/* Left */}
 
@@ -23,30 +27,40 @@ const CommitBar = ({
                     />
 
                     <span className="font-semibold">
-                        {latestCommit.author || "Unknown"}
+                        codex
                     </span>
 
                     <span className="text-gray-400">
-                        {latestCommit.message || "Initial commit"}
+
+                        {commitMessage}
+
                     </span>
 
                 </div>
 
                 {/* Right */}
 
-                <div className="flex items-center gap-5">
+                <div className="flex items-center gap-6 text-sm">
 
-                    <span className="text-[#58a6ff] font-mono">
-                        {latestCommit.id?.slice(0, 7)}
+                    <span className="font-mono text-[#58a6ff]">
+
+                        {latestCommit.slice(0, 7)}
+
+                    </span>
+
+                    <span className="text-gray-400">
+
+                        {formatDistanceToNow(new Date(commitDate), {
+                            addSuffix: true,
+                        })}
+
                     </span>
 
                     <div className="flex items-center gap-2">
 
                         <GitCommit size={16} />
 
-                        <span>
-                            {totalCommits} commits
-                        </span>
+                        {totalCommits} commit{totalCommits > 1 && "s"}
 
                     </div>
 
@@ -55,7 +69,9 @@ const CommitBar = ({
             </div>
 
         </div>
+
     );
+
 };
 
 export default CommitBar;

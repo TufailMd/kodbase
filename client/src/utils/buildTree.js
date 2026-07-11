@@ -1,39 +1,36 @@
-const buildTree = (paths) => {
-    const root = [];
+export default function buildTree(paths) {
+  const root = [];
 
-    paths.forEach((path) => {
-        const parts = path.split("/");
+  for (const fullPath of paths) {
+    const parts = fullPath.split("/");
 
-        let current = root;
+    let current = root;
 
-        parts.forEach((part, index) => {
+    parts.forEach((part, index) => {
+      const isFile = index === parts.length - 1;
 
-            let existing = current.find(
-                (item) => item.name === part
-            );
+      let node = current.find(
+        (item) =>
+          item.name === part && item.type === (isFile ? "file" : "folder"),
+      );
 
-            if (!existing) {
+      if (!node) {
+        node = {
+          name: part,
 
-                existing = {
-                    name: part,
-                    type:
-                        index === parts.length - 1
-                            ? "file"
-                            : "folder",
-                    children: [],
-                    path: parts
-                        .slice(0, index + 1)
-                        .join("/"),
-                };
+          type: isFile ? "file" : "folder",
 
-                current.push(existing);
-            }
+          path: parts.slice(0, index + 1).join("/"),
 
-            current = existing.children;
-        });
+          children: [],
+        };
+
+        current.push(node);
+      }
+
+      current = node.children;
     });
+  }
 
-    return root;
-};
-
-export default buildTree;
+  return root;
+}

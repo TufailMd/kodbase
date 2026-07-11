@@ -7,11 +7,11 @@ const QuickSetup = () => {
     const repoUrl = `http://localhost:3000/${name}.git`;
 
     const commands = [
-        "kod init",
-        `kod remote add origin ${repoUrl}`,
-        "kod add .",
-        'kod commit "Initial commit"',
-        "kod push",
+        "node index.js init",
+        `node index.js remote add origin ${repoUrl}`,
+        "node index.js add .",
+        'node index.js commit "Initial commit"',
+        "node index.js push",
     ];
 
     const copyCommand = async (command) => {

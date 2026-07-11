@@ -16,6 +16,7 @@ import RepoDetail from './components/repo/RepoDetail.jsx';
 import CreateRepo from './components/repo/CreateRepo.jsx';
 import EditRepo from './components/repo/EditRepo.jsx';
 import QuickSetup from './components/repository/QuickSetup.jsx';
+import RepositorySettings from './components/repo/RepositorySettings.jsx';
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -30,7 +31,10 @@ const router = createBrowserRouter(
       <Route path="repo/:name" element={<RepoDetail />} />
       <Route path="repo/create" element={<CreateRepo />} />
       <Route path="repo/edit/:id" element={<EditRepo />} />
-
+      <Route
+        path="/repo/:name/settings"
+        element={<RepositorySettings />}
+      />
       {/* <Route path="/repo/:repoName" element={<Repository />} />
 
       <Route

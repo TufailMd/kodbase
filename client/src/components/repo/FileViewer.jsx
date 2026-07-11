@@ -1,5 +1,57 @@
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import Editor from "@monaco-editor/react";
+
+const getLanguage = (fileName = "") => {
+    const ext = fileName.split(".").pop()?.toLowerCase();
+
+    switch (ext) {
+        case "js":
+        case "jsx":
+            return "javascript";
+
+        case "ts":
+        case "tsx":
+            return "typescript";
+
+        case "json":
+            return "json";
+
+        case "html":
+            return "html";
+
+        case "css":
+            return "css";
+
+        case "md":
+            return "markdown";
+
+        case "py":
+            return "python";
+
+        case "java":
+            return "java";
+
+        case "cpp":
+        case "cc":
+        case "cxx":
+            return "cpp";
+
+        case "c":
+            return "c";
+
+        case "xml":
+            return "xml";
+
+        case "yml":
+        case "yaml":
+            return "yaml";
+
+        case "sh":
+            return "shell";
+
+        default:
+            return "plaintext";
+    }
+};
 
 const FileViewer = ({
     loading,
@@ -7,69 +59,64 @@ const FileViewer = ({
     fileContent,
 }) => {
 
-    if (!selectedFile) {
+    if (loading) {
+        console.log(fileContent);
         return (
-            <div className="mt-6 border border-[#30363d] rounded-lg h-96 flex items-center justify-center text-gray-400">
-                Select a file to view its content.
+            <div className="flex items-center justify-center h-[600px] border border-[#30363d] rounded-lg bg-[#0d1117]">
+                Loading...
+            </div>
+        );
+    }
+
+    if (!selectedFile) {
+        console.log(selectedFile);
+        return (
+            <div className="flex items-center justify-center h-[600px] border border-[#30363d] rounded-lg bg-[#0d1117] text-gray-500">
+                Select a file to view.
             </div>
         );
     }
 
     return (
-        <div className="mt-6 border border-[#30363d] rounded-lg overflow-hidden">
+        <div className="rounded-lg overflow-hidden border border-[#30363d]">
 
-            {/* Header */}
+            <div className="px-4 py-3 bg-[#161b22] border-b border-[#30363d] flex justify-between items-center">
 
-            <div className="bg-[#161b22] border-b border-[#30363d] px-5 py-3 flex justify-between">
+                <span className="font-medium">
 
-                <span className="font-semibold">
                     {selectedFile}
+
                 </span>
 
-                <div className="flex gap-4 text-sm text-gray-400">
+                <span className="text-xs text-gray-400">
 
-                    <button className="hover:text-white">
-                        Raw
-                    </button>
+                    {getLanguage(selectedFile)}
 
-                    <button className="hover:text-white">
-                        Blame
-                    </button>
-
-                    <button className="hover:text-white">
-                        History
-                    </button>
-
-                </div>
+                </span>
 
             </div>
 
-            {/* Code */}
-
-            {loading ? (
-
-                <div className="h-96 flex items-center justify-center">
-
-                    Loading...
-
-                </div>
-
-            ) : (
-
-                <SyntaxHighlighter
-                    language="javascript"
-                    style={vscDarkPlus}
-                    showLineNumbers
-                    customStyle={{
-                        margin: 0,
-                        background: "#0d1117",
-                        minHeight: "500px",
-                    }}
-                >
-                    {fileContent}
-                </SyntaxHighlighter>
-
-            )}
+            <Editor
+                height="70vh"
+                theme="vs-dark"
+                language={getLanguage(selectedFile)}
+                value={fileContent}
+                options={{
+                    readOnly: true,
+                    minimap: {
+                        enabled: false,
+                    },
+                    scrollBeyondLastLine: false,
+                    wordWrap: "off",
+                    fontSize: 14,
+                    tabSize: 4,
+                    renderWhitespace: "selection",
+                    automaticLayout: true,
+                    padding: {
+                        top: 20,
+                    },
+                }}
+            />
 
         </div>
     );

@@ -8,102 +8,182 @@ import CommitBar from "./CommitBar";
 import FileExplorer from "./FileExplorer";
 import FileViewer from "./FileViewer";
 import AboutSidebar from "./AboutSidebar";
-import RepositoryTree from "../repository/RepositoryTree";
-import buildTree from "../../utils/buildTree";
 
 const RepoDetail = () => {
     const { name } = useParams();
     const navigate = useNavigate();
 
+    /* ---------------- Repository ---------------- */
+
     const [repo, setRepo] = useState(null);
+
+    /* ---------------- Commits ---------------- */
+
     const [commits, setCommits] = useState({});
-    const [files, setFiles] = useState([]);
     const [selectedCommit, setSelectedCommit] = useState("");
+
+    const [commitMessage, setCommitMessage] = useState("");
+    const [commitDate, setCommitDate] = useState("");
+    const [totalCommits, setTotalCommits] = useState(0);
+
+    /* ---------------- Files ---------------- */
+
+    const [files, setFiles] = useState([]);
     const [selectedFile, setSelectedFile] = useState("");
     const [fileContent, setFileContent] = useState("");
+
+    /* ---------------- UI ---------------- */
+
     const [loading, setLoading] = useState(false);
 
-    const tree = buildTree(files);
-
     useEffect(() => {
-        const fetchRepo = async () => {
-            try {
-                const res = await axios.get(
-                    `http://localhost:3000/repo/name/${name}`
-                );
-
-                setRepo(res.data);
-
-                fetchS3Contents(res.data.name);
-            } catch (err) {
-                console.error(err);
-            }
-        };
-
-        fetchRepo();
+        fetchRepository();
     }, [name]);
 
-    const fetchS3Contents = async (repoName) => {
+    /* -------------------------------------------------- */
+    /* Fetch Repository                                  */
+    /* -------------------------------------------------- */
+
+    const fetchRepository = async () => {
         try {
-            const res = await axios.get(
+
+            const { data } = await axios.get(
+                `http://localhost:3000/repo/name/${name}`
+            );
+
+            setRepo(data);
+
+            fetchS3Contents(data.name);
+
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    /* -------------------------------------------------- */
+    /* Fetch Repository Files From S3                     */
+    /* -------------------------------------------------- */
+
+    const fetchS3Contents = async (repoName) => {
+
+        try {
+
+            const { data } = await axios.get(
                 `http://localhost:3000/repo/s3/${repoName}`
             );
 
-            if (res.data.isEmpty) {
+            if (data.isEmpty) {
+
                 navigate(`/repo/${repoName}/quick-setup`);
+
                 return;
+
             }
 
-            setCommits(res.data.commits);
-            setFiles(res.data.files);
-            setSelectedCommit(res.data.latestCommit);
+            setCommits(data.commits);
+
+            setFiles(data.files);
+
+            setSelectedCommit(data.latestCommit);
+
+            setCommitMessage(data.commitMessage);
+
+            setCommitDate(data.commitDate);
+
+            setTotalCommits(data.totalCommits);
+
         } catch (err) {
+
             console.error(err);
+
         }
+
     };
+
+    /* -------------------------------------------------- */
+    /* Change Commit                                      */
+    /* -------------------------------------------------- */
 
     const handleCommitChange = (commitId) => {
+
         setSelectedCommit(commitId);
+
         setFiles(commits[commitId] || []);
+
         setSelectedFile("");
+
         setFileContent("");
+
     };
 
-    const handleFileClick = async (file) => {
+    /* -------------------------------------------------- */
+    /* Open File                                          */
+    /* -------------------------------------------------- */
+
+    const handleFileClick = async (filePath) => {
+
         try {
-            setSelectedFile(file);
+
             setLoading(true);
 
-            const res = await axios.get(
-                `http://localhost:3000/repo/s3/file/${selectedCommit}/${file}`
+            setSelectedFile(filePath);
+
+            const { data } = await axios.get(
+
+                `http://localhost:3000/repo/file/${name}/${selectedCommit}/${filePath}`
+
             );
 
-            setFileContent(res.data.content);
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
+            setFileContent(data.content);
+
         }
+
+        catch (err) {
+
+            console.error("Unable to load file", err);
+
+        }
+
+        finally {
+
+            setLoading(false);
+
+        }
+
     };
 
-    if (!repo) return null;
+    /* -------------------------------------------------- */
+    /* Loading State                                      */
+    /* -------------------------------------------------- */
 
-    const latestCommit = selectedCommit
-        ? {
-            id: selectedCommit,
-            author: "codex",
-            message: "Latest Commit",
-        }
-        : null;
+    if (!repo) {
 
-    const totalCommits = Object.keys(commits).length;
+        return (
+
+            <div className="min-h-screen bg-[#0d1117] flex items-center justify-center">
+
+                <div className="text-gray-400 animate-pulse">
+
+                    Loading repository...
+
+                </div>
+
+            </div>
+
+        );
+
+    }
 
     return (
-        <div className="min-h-screen bg-[#0d1117] text-white">
+        <div className="min-h-screen bg-[#0d1117] text-[#e6edf3]">
+
+            {/* Repository Header */}
 
             <RepositoryHeader repo={repo} />
 
-            <div className="max-w-7xl mx-auto px-6 py-5">
+            <div className="max-w-[1500px] mx-auto px-4 md:px-6 py-5">
+
+                {/* Toolbar */}
 
                 <RepositoryToolbar
                     repo={repo}
@@ -113,55 +193,59 @@ const RepoDetail = () => {
                 />
 
                 {/* Main Layout */}
-                <div className="grid grid-cols-12 gap-6 mt-6">
 
-                    {/* Left Sidebar */}
-                    <aside className="col-span-3">
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mt-6">
 
-                        <div className="border border-[#30363d] rounded-lg overflow-hidden">
+                    {/* Main Content */}
 
-                            <div className="px-4 py-3 bg-[#161b22] border-b border-[#30363d] font-semibold">
-                                Files
-                            </div>
+                    <main className="xl:col-span-9 space-y-5">
 
-                            <div className="p-3">
-                                <RepositoryTree tree={tree} />
-                            </div>
-
-                        </div>
-
-                    </aside>
-
-                    {/* Center */}
-                    <main className="col-span-6">
+                        {/* Commit Bar */}
 
                         <CommitBar
-                            latestCommit={latestCommit}
+                            latestCommit={selectedCommit}
                             totalCommits={totalCommits}
+                            commitMessage={commitMessage}
+                            commitDate={commitDate}
                         />
 
-                        <div className="mt-4">
+                        {/* File Explorer */}
+
+                        <section className="rounded-lg overflow-hidden border border-[#30363d]">
 
                             <FileExplorer
                                 files={files}
                                 selectedFile={selectedFile}
                                 onFileClick={handleFileClick}
+                                commitMessage={commitMessage}
+                                commitDate={commitDate}
                             />
 
-                        </div>
+                        </section>
 
-                        <FileViewer
-                            loading={loading}
-                            selectedFile={selectedFile}
-                            fileContent={fileContent}
-                        />
+                        {/* File Viewer */}
+
+                        <section className="rounded-lg overflow-hidden border border-[#30363d] bg-[#0d1117]">
+
+                            <FileViewer
+                                loading={loading}
+                                selectedFile={selectedFile}
+                                fileContent={fileContent}
+                            />
+
+                        </section>
 
                     </main>
 
                     {/* Right Sidebar */}
-                    <aside className="col-span-3">
 
-                        <AboutSidebar repo={repo} />
+                    <aside className="xl:col-span-3">
+
+                        <div className="sticky top-6">
+
+                            <AboutSidebar repo={repo} />
+
+                        </div>
 
                     </aside>
 
@@ -171,6 +255,7 @@ const RepoDetail = () => {
 
         </div>
     );
+
 };
 
 export default RepoDetail;

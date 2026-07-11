@@ -10,10 +10,22 @@ const getRepoContentsFromS3 = async (req, res) => {
   const { repoName } = req.params;
 
   try {
+    // Find repository
+    const repository = await Repository.findOne({ name: repoName });
+
+    if (!repository) {
+      return res.status(404).json({
+        message: "Repository not found",
+      });
+    }
+
+    const repositoryId = repository._id.toString();
+
+    // List only this repository's files
     const data = await s3
       .listObjectsV2({
         Bucket: S3_BUCKET,
-        Prefix: `commits/`,
+        Prefix: `${repositoryId}/commits/`,
       })
       .promise();
 
@@ -28,59 +40,111 @@ const getRepoContentsFromS3 = async (req, res) => {
 
     const commitMap = {};
 
-    data.Contents.forEach((obj) => {
+    for (const obj of data.Contents) {
       const key = obj.Key;
+
+      // Skip folder placeholders
+      if (key.endsWith("/")) continue;
 
       const parts = key.split("/");
 
-      if (parts.length < 3) return;
+      // Structure:
+      // repositoryId/commits/commitId/path/to/file
 
-      const commitId = parts[1];
+      if (parts.length < 4) continue;
 
-      const relativePath = parts.slice(2).join("/");
+      const commitId = parts[2];
+
+      const relativePath = parts.slice(3).join("/");
 
       if (!commitMap[commitId]) {
         commitMap[commitId] = [];
       }
 
+      // Skip commit metadata
       if (relativePath !== "commit.json") {
         commitMap[commitId].push(relativePath);
       }
-    });
+    }
 
-    const commitIds = Object.keys(commitMap);
-    const latestCommitId = commitIds[commitIds.length - 1];
-    const files = commitMap[latestCommitId];
+    const latestCommitId = data.Contents.filter(
+      (obj) =>
+        obj.Key.endsWith("commit.json") &&
+        obj.Key.startsWith(`${repositoryId}/commits/`),
+    )
+      .sort((a, b) => new Date(b.LastModified) - new Date(a.LastModified))[0]
+      ?.Key.split("/")[2];
+
+    const files = commitMap[latestCommitId] || [];
+
+    const commitData = await s3
+      .getObject({
+        Bucket: S3_BUCKET,
+        Key: `${repositoryId}/commits/${latestCommitId}/commit.json`,
+      })
+      .promise();
+
+    const commitInfo = JSON.parse(commitData.Body.toString());
 
     res.json({
       isEmpty: false,
       commits: commitMap,
       latestCommit: latestCommitId,
+      commitMessage: commitInfo.message,
+      commitDate: commitInfo.date,
+      totalCommits: Object.keys(commitMap).length,
       files,
     });
   } catch (err) {
     console.error("Error fetching from S3:", err);
-    res.status(500).json({ message: "Server error" });
+
+    res.status(500).json({
+      message: "Server error",
+    });
   }
 };
 
 const getFileContentFromS3 = async (req, res) => {
-  const { commitId, fileName } = req.params;
+  let { repoName, commitId, filePath } = req.params;
 
   try {
+    const repository = await Repository.findOne({ name: repoName });
+
+    if (!repository) {
+      return res.status(404).json({
+        message: "Repository not found",
+      });
+    }
+
+    // Express 5 wildcard support
+    if (Array.isArray(filePath)) {
+      filePath = filePath.join("/");
+    }
+
+    const repositoryId = repository._id.toString();
+
+    const key = `${repositoryId}/commits/${commitId}/${filePath}`;
+
+    console.log("S3 Key:", key);
+
     const fileData = await s3
       .getObject({
         Bucket: S3_BUCKET,
-        Key: `commits/${commitId}/${fileName}`,
+        Key: key,
       })
       .promise();
 
-    const content = fileData.Body.toString("utf-8");
-
-    res.json({ content, fileName });
+    res.json({
+      fileName: filePath,
+      content: fileData.Body.toString("utf8"),
+    });
   } catch (err) {
-    console.error("Error fetching file:", err);
-    res.status(500).json({ message: "File not found" });
+    console.error(err);
+
+    res.status(500).json({
+      message: "Unable to fetch file",
+      error: err.message,
+    });
   }
 };
 
@@ -234,10 +298,10 @@ const fetchRepositoriesForCurrentUser = async (req, res) => {
   }
 };
 
-const updateRepositoryById = async (req, res) => {
+const updateRepository = async (req, res) => {
   try {
     const { id } = req.params;
-    const { description, content } = req.body;
+    const { name, description } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
@@ -253,26 +317,44 @@ const updateRepositoryById = async (req, res) => {
       });
     }
 
-    if (description !== undefined) {
-      repository.description = description;
+    // Update repository name
+    if (name !== undefined) {
+      const trimmedName = name.trim();
+
+      if (!trimmedName) {
+        return res.status(400).json({
+          message: "Repository name cannot be empty",
+        });
+      }
+
+      const existingRepository = await Repository.findOne({
+        name: trimmedName,
+        _id: { $ne: repository._id },
+      });
+
+      if (existingRepository) {
+        return res.status(400).json({
+          message: "Repository name already exists",
+        });
+      }
+
+      repository.name = trimmedName;
     }
 
-    if (content !== undefined) {
-      if (Array.isArray(content)) {
-        repository.content.push(...content);
-      } else {
-        repository.content.push(content);
-      }
+    // Update description
+    if (description !== undefined) {
+      repository.description = description.trim();
     }
 
     await repository.save();
 
-    res.json({
+    res.status(200).json({
       message: "Repository updated successfully",
       repository,
     });
   } catch (err) {
     console.error("Error updating repository:", err);
+
     res.status(500).json({
       message: "Server error",
     });
@@ -360,7 +442,7 @@ export default {
   fetchRepositoryById,
   fetchRepositoryByName,
   fetchRepositoriesForCurrentUser,
-  updateRepositoryById,
+  updateRepository,
   deleteRepositoryById,
   toggleVisibilityById,
   getRepoContentsFromS3,
